@@ -1,0 +1,71 @@
+#!/bin/bash
+
+echo "------------------------------"
+echo "REMOTES MANAGER BY JOE FURFARO"
+echo "-------------------------------"
+
+if [ ! -d "hosts" ] ; then
+    mkdir "hosts"
+fi
+
+CMD=""
+while [ ! "$CMD" == "exit" ] ; do
+    read CMD
+    if [ "$CMD" == "ssh" ] ; then
+        echo "Enter target ID..."
+        read ID
+        if [ -f "hosts/$ID" ] ; then
+            HOST=$(sed '2q;d' "hosts/$ID")
+            USERNAME=$(sed '3q;d' "hosts/$ID")
+            echo "Opening connection to '$ID' ($USERNAME@$HOST)"
+            ssh "$USERNAME@$HOST"
+            echo "--------------------"
+        else
+            echo "Host with ID '$ID' not found"
+        fi
+    elif [ "$CMD" == "addhost" ] ; then
+        echo "Enter new ID..."
+        read ID
+        echo "Enter host address..."
+        read HOST
+        echo "Enter user..."
+        read USERNAME
+        # Create host here
+        > "hosts/$ID"
+        echo "$ID" >> "hosts/$ID"
+        echo "$HOST" >> "hosts/$ID"
+        echo "$USERNAME" >> "hosts/$ID"
+        echo "Host added successfully"
+    elif [ "$CMD" == "hosts" ] ; then
+        ls "hosts"
+    elif [ "$CMD" == "delhost" ] ; then
+        echo "Enter id..."
+        read ID
+        if [ -f "hosts/$ID" ] ; then
+            rm "hosts/$ID"
+            echo "Host deleted successfully"
+        else
+            echo "Host not found"
+        fi
+    elif [ "$CMD" == "scp" ] ; then
+        echo "Enter file path..."
+        read LPATH
+        echo "Enter target ID..."
+        read ID
+        echo "Enter target path..."
+        read TPATH
+        if [ -f "hosts/$ID" ] ; then
+            HOST=$(sed '2q;d' "hosts/$ID")
+            USERNAME=$(sed '3q;d' "hosts/$ID")
+            echo "Attempting to copy file to '$ID' ($USERNAME@$HOST)"
+            scp "$LPATH" "$USERNAME@$HOST:$TPATH"
+            echo "--------------------"
+        else
+            echo "Host with ID '$ID' not found"
+        fi
+    else
+        echo "Command not found"
+    fi
+done
+
+echo "Goodbye"
