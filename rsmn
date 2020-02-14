@@ -1,0 +1,104 @@
+#!/bin/bash
+
+if [ ! -d "hosts" ] ; then
+    mkdir "hosts"
+fi
+
+if [ "$#" -eq 0 ] ; then
+    echo "ERROR: No argument(s) specified"
+fi
+
+if [ "$1" == "add" ] ; then
+    if [ "$#" -eq 3 ] ; then
+        ID="$2"
+        SERVER="$3"
+        if [ -f "hosts/$ID" ] ; then
+            echo "ERROR: Cannot add host. Host with ID '$ID' already exists"
+        else
+            > "hosts/$ID"
+            echo "$ID" >> "hosts/$ID"
+            echo "$SERVER" >> "hosts/$ID"
+            echo "-" >> "hosts/$ID"
+            echo "Host added successfully"
+        fi
+    elif [ "$#" -eq 4 ] ; then
+        ID="$2"
+        SERVER="$3"
+        USERNAME="$4"
+        if [ -f "hosts/$ID" ] ; then
+            echo "ERROR: Cannot add host. Host with ID '$ID' already exists"
+        else
+            > "hosts/$ID"
+            echo "$ID" >> "hosts/$ID"
+            echo "$SERVER" >> "hosts/$ID"
+            echo "$USERNAME" >> "hosts/$ID"
+            echo "Host added successfully"
+        fi
+    else
+        echo "ERROR: Invalid syntax. Try using add [ID] [host] <user>"
+    fi
+elif [ "$1" == "del" ] ; then
+    if [ "$#" -eq 2 ] ; then
+        ID="$2"
+        if [ -f "hosts/$ID" ] ; then
+            rm "hosts/$ID"
+            echo "Host deleted successfully"
+        else
+            echo "ERROR: Could not find host with ID '$ID'"
+        fi
+    else
+        echo "ERROR: Invalid syntax. Try using del [ID]"
+    fi
+elif [ "$1" == "list" ] ; then
+    FILES=$(find "hosts" -type f)
+    CONTENTS=""
+    IFS=$'\n'
+    > "tmp_list"
+    echo "HOST ID|HOST ADDRESS|USER NAME" >> tmp_list
+    echo "-------|------------|---------" >> tmp_list
+    for FILE in $FILES ; do
+        CUR_CONTENTS=$(cat "$FILE" | tr "\n" "|")
+        echo $CUR_CONTENTS >> "tmp_list"
+    done
+    column -t -s '|' tmp_list
+    rm "tmp_list"
+    IFS=" "
+elif [ "$1" == "ssh" ] ; then
+    if [ "$#" -eq 2 ] ; then
+        ID="$2"
+        if [ -f "hosts/$ID" ] ; then
+            HOST=$(sed '2q;d' "hosts/$ID")
+            USERNAME=$(sed '3q;d' "hosts/$ID")
+            if [ "$USERNAME" == "-" ] ; then
+                ssh "$HOST"
+            else
+                ssh "$USERNAME@$HOST"
+            fi
+        else
+            echo "ERROR: Could not find host with ID '$ID'"
+        fi
+    else
+        echo "ERROR: Invalid syntax. Try using ssh [host ID]"
+    fi
+elif [ "$1" == "scp" ] ; then
+    if [ "$#" -eq 4 ] ; then
+        ID="$2"
+        LPATH="$3"
+        TPATH="$4"
+        if [ -f "hosts/$ID" ] ; then
+            HOST=$(sed '2q;d' "hosts/$ID")
+            USERNAME=$(sed '3q;d' "hosts/$ID")
+            if [ "$USERNAME" == "-" ] ; then
+                scp "$LPATH" "$HOST:$TPATH"
+            else
+                scp "$LPATH" "$USERNAME@$HOST:$TPATH"
+            fi
+        else
+            echo "ERROR: Could not find host with ID '$ID'"
+        fi
+    else
+        echo "ERROR: Invalid syntax. Try using scp [host ID] [local path] [target path]"
+    fi
+else
+    echo "ERROR: '$1' is not a valid operation"
+fi
